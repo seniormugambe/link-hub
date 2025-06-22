@@ -1,10 +1,10 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link2, Instagram, Twitter, Facebook, Youtube, Github, Linkedin, Music, Video, Globe } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Link2, Instagram, Twitter, Facebook, Youtube, Github, Linkedin, Music, Video, Globe, Camera, Share, Copy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -15,6 +15,7 @@ const Index = () => {
     avatar: '',
     links: [] as Array<{id: string, title: string, url: string, icon: string}>
   });
+  const [copied, setCopied] = useState(false);
   const { toast } = useToast();
 
   const handleCreateProfile = () => {
@@ -31,6 +32,53 @@ const Index = () => {
       return;
     }
     setCurrentView('preview');
+  };
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfileData(prev => ({
+          ...prev,
+          avatar: e.target?.result as string
+        }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleShare = async () => {
+    const profileUrl = `${window.location.origin}/${profileData.name.toLowerCase().replace(/\s+/g, '-')}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${profileData.name} - Uganda Bio Connect`,
+          text: profileData.bio || `Check out ${profileData.name}'s bio link`,
+          url: profileUrl,
+        });
+      } catch (error) {
+        console.log('Error sharing:', error);
+      }
+    } else {
+      // Fallback to copying URL
+      try {
+        await navigator.clipboard.writeText(profileUrl);
+        setCopied(true);
+        toast({
+          title: "Link copied!",
+          description: "Profile link has been copied to clipboard",
+        });
+        setTimeout(() => setCopied(false), 2000);
+      } catch (error) {
+        toast({
+          title: "Copy failed",
+          description: "Please copy the link manually",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   const addLink = () => {
@@ -183,6 +231,35 @@ const Index = () => {
               <CardTitle className="text-2xl text-center text-stone-100">Profile Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Profile Image Upload */}
+              <div className="text-center">
+                <label className="block text-sm font-medium text-stone-200 mb-4">Profile Image</label>
+                <div className="flex flex-col items-center space-y-4">
+                  <Avatar className="w-24 h-24">
+                    <AvatarImage src={profileData.avatar} alt="Profile" />
+                    <AvatarFallback className="bg-stone-600 text-stone-200 text-2xl">
+                      {profileData.name ? profileData.name.charAt(0).toUpperCase() : <Camera className="w-8 h-8" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      id="avatar-upload"
+                    />
+                    <label
+                      htmlFor="avatar-upload"
+                      className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-amber-700 hover:bg-amber-800 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      <Camera className="w-4 h-4" />
+                      {profileData.avatar ? 'Change Image' : 'Upload Image'}
+                    </label>
+                  </div>
+                </div>
+              </div>
+
               {/* Basic Info */}
               <div className="space-y-4">
                 <div>
@@ -287,13 +364,23 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-stone-900 via-amber-900 to-stone-800 py-8">
       <div className="container mx-auto px-4 max-w-md">
         <div className="text-center mb-6">
-          <Button 
-            onClick={() => setCurrentView('create')}
-            variant="outline" 
-            className="mb-4 border-amber-600 text-amber-200 hover:bg-amber-900/30"
-          >
-            ← Edit Profile
-          </Button>
+          <div className="flex gap-2 justify-center">
+            <Button 
+              onClick={() => setCurrentView('create')}
+              variant="outline" 
+              className="border-amber-600 text-amber-200 hover:bg-amber-900/30"
+            >
+              ← Edit Profile
+            </Button>
+            <Button 
+              onClick={handleShare}
+              variant="outline" 
+              className="border-amber-600 text-amber-200 hover:bg-amber-900/30 flex items-center gap-2"
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Share className="w-4 h-4" />}
+              {copied ? 'Copied!' : 'Share'}
+            </Button>
+          </div>
         </div>
 
         {/* Profile Preview */}
@@ -301,9 +388,12 @@ const Index = () => {
           <CardContent className="p-0">
             {/* Header */}
             <div className="bg-gradient-to-r from-amber-800 to-stone-700 p-8 text-center text-white">
-              <div className="w-24 h-24 bg-stone-600/40 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl font-bold border-2 border-stone-400">
-                {profileData.name.charAt(0).toUpperCase()}
-              </div>
+              <Avatar className="w-24 h-24 mx-auto mb-4 border-2 border-stone-400">
+                <AvatarImage src={profileData.avatar} alt={profileData.name} />
+                <AvatarFallback className="bg-stone-600/40 text-4xl font-bold text-white">
+                  {profileData.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
               <h1 className="text-2xl font-bold mb-2">{profileData.name}</h1>
               {profileData.bio && (
                 <p className="text-stone-200 text-sm">{profileData.bio}</p>
