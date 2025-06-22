@@ -1,359 +1,337 @@
-import React, { useState, useCallback } from 'react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  User,
-  Camera,
-  Plus,
-  Instagram,
-  Twitter,
-  Youtube,
-  Linkedin,
-  Github,
-  Music,
-  Globe,
-  ExternalLink,
-  Eye,
-  Share2,
-  Trash2,
-  Link as LinkIcon,
-} from 'lucide-react';
-import { useToast } from "@/components/ui/use-toast";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Link2, Instagram, Twitter, Facebook, Youtube } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
-  const [profileImage, setProfileImage] = useState<string | null>(null);
-  const [name, setName] = useState('');
-  const [bio, setBio] = useState('');
-  const [links, setLinks] = useState<
-    { title: string; url: string; icon: string }[]
-  >([]);
-  const [currentTitle, setCurrentTitle] = useState('');
-  const [currentUrl, setCurrentUrl] = useState('');
-  const [currentIcon, setCurrentIcon] = useState('link');
+  const [currentView, setCurrentView] = useState<'landing' | 'create' | 'preview'>('landing');
+  const [profileData, setProfileData] = useState({
+    name: '',
+    bio: '',
+    avatar: '',
+    links: [] as Array<{id: string, title: string, url: string, icon: string}>
+  });
   const { toast } = useToast();
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleCreateProfile = () => {
+    setCurrentView('create');
   };
 
-  const addLink = useCallback(() => {
-    if (currentTitle && currentUrl) {
-      setLinks([...links, { title: currentTitle, url: currentUrl, icon: currentIcon }]);
-      setCurrentTitle('');
-      setCurrentUrl('');
-      setCurrentIcon('link');
+  const handlePreview = () => {
+    if (!profileData.name) {
+      toast({
+        title: "Please enter your name",
+        description: "A name is required to preview your profile",
+        variant: "destructive",
+      });
+      return;
     }
-  }, [currentTitle, currentUrl, currentIcon, links]);
+    setCurrentView('preview');
+  };
 
-  const removeLink = useCallback((index: number) => {
-    const newLinks = [...links];
-    newLinks.splice(index, 1);
-    setLinks(newLinks);
-  }, [links]);
+  const addLink = () => {
+    const newLink = {
+      id: Date.now().toString(),
+      title: '',
+      url: '',
+      icon: 'link'
+    };
+    setProfileData(prev => ({
+      ...prev,
+      links: [...prev.links, newLink]
+    }));
+  };
+
+  const updateLink = (id: string, field: string, value: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      links: prev.links.map(link => 
+        link.id === id ? { ...link, [field]: value } : link
+      )
+    }));
+  };
+
+  const removeLink = (id: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      links: prev.links.filter(link => link.id !== id)
+    }));
+  };
 
   const getIcon = (iconName: string) => {
     switch (iconName) {
-      case 'instagram':
-        return <Instagram className="w-6 h-6 text-pink-500" />;
-      case 'twitter':
-        return <Twitter className="w-6 h-6 text-blue-400" />;
-      case 'youtube':
-        return <Youtube className="w-6 h-6 text-red-500" />;
-      case 'linkedin':
-        return <Linkedin className="w-6 h-6 text-blue-600" />;
-      case 'github':
-        return <Github className="w-6 h-6 text-gray-800" />;
-      case 'music':
-        return <Music className="w-6 h-6 text-purple-500" />;
-      case 'globe':
-        return <Globe className="w-6 h-6 text-green-500" />;
-      case 'link':
-      default:
-        return <LinkIcon className="w-6 h-6 text-gray-600" />;
+      case 'instagram': return <Instagram className="w-5 h-5" />;
+      case 'twitter': return <Twitter className="w-5 h-5" />;
+      case 'facebook': return <Facebook className="w-5 h-5" />;
+      case 'youtube': return <Youtube className="w-5 h-5" />;
+      default: return <Link2 className="w-5 h-5" />;
     }
   };
 
-  const handleShare = () => {
-    const profileData = {
-      name,
-      bio,
-      links,
-      profileImage,
-    };
-  
-    const profileDataString = JSON.stringify(profileData);
-    const encodedProfileData = btoa(profileDataString);
-    const shareableLink = `${window.location.origin}/?profile=${encodedProfileData}`;
-  
-    navigator.clipboard.writeText(shareableLink)
-      .then(() => {
-        toast({
-          title: "Link copied to clipboard!",
-          description: "Share this link to show your profile.",
-        })
-      })
-      .catch(err => {
-        toast({
-          title: "Failed to copy link",
-          description: "Please try again.",
-        })
-        console.error('Could not copy text: ', err);
-      });
-  };
+  if (currentView === 'landing') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-stone-900 via-amber-900 to-stone-800">
+        {/* Hero Section */}
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center mb-16">
+            <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-amber-200 to-stone-200 bg-clip-text text-transparent mb-6">
+              Uganda Bio Connect
+            </h1>
+            <p className="text-xl md:text-2xl text-stone-300 mb-8 max-w-2xl mx-auto">
+              Connect your business with Uganda. One link, endless possibilities.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button 
+                onClick={handleCreateProfile}
+                size="lg" 
+                className="bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white px-8 py-3 rounded-full text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Create Your Bio Link
+              </Button>
+              <Button 
+                variant="outline" 
+                size="lg"
+                className="border-2 border-amber-600 text-amber-200 hover:bg-amber-900/30 bg-transparent px-8 py-3 rounded-full text-lg font-semibold transition-all duration-300"
+              >
+                View Examples
+              </Button>
+            </div>
+          </div>
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-gray-50 to-pink-100">
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-pink-600 via-gray-700 to-pink-500 bg-clip-text text-transparent mb-4">
-            LinkTree Uganda
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Create your professional link hub for musicians, influencers, and developers. 
-            Share all your platforms in one beautiful place.
-          </p>
+          {/* Features Grid */}
+          <div className="grid md:grid-cols-3 gap-8 mb-16">
+            <Card className="border-stone-700 shadow-lg bg-stone-800/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-600 to-amber-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Link2 className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-stone-100">Simple Setup</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center text-stone-300">
+                  Create your professional bio link in minutes. No technical skills required.
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="border-stone-700 shadow-lg bg-stone-800/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-stone-600 to-stone-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Instagram className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-stone-100">Social Integration</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center text-stone-300">
+                  Connect all your social media, website, and business platforms in one place.
+                </CardDescription>
+              </CardContent>
+            </Card>
+
+            <Card className="border-stone-700 shadow-lg bg-stone-800/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+              <CardHeader className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-amber-700 to-stone-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Youtube className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-stone-100">Uganda Focused</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-center text-stone-300">
+                  Built specifically for Ugandan entrepreneurs and small businesses.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Call to Action */}
+          <div className="text-center bg-gradient-to-r from-amber-800 to-stone-700 rounded-2xl p-8 text-white border border-stone-600">
+            <h2 className="text-3xl font-bold mb-4">Ready to grow your business?</h2>
+            <p className="text-xl mb-6 opacity-90">Join hundreds of Ugandan entrepreneurs already using Bio Connect</p>
+            <Button 
+              onClick={handleCreateProfile}
+              size="lg" 
+              className="bg-stone-100 text-stone-900 hover:bg-stone-200 px-8 py-3 rounded-full text-lg font-semibold"
+            >
+              Get Started Today
+            </Button>
+          </div>
         </div>
+      </div>
+    );
+  }
 
-        <div className="max-w-4xl mx-auto grid lg:grid-cols-2 gap-8">
-          {/* Builder Section */}
-          <Card className="p-6 bg-white/80 backdrop-blur-sm border-pink-200 shadow-xl">
+  if (currentView === 'create') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-stone-900 via-amber-900 to-stone-800 py-8">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-stone-100 mb-2">Create Your Bio Link</h1>
+            <p className="text-stone-300">Build your professional presence in minutes</p>
+          </div>
+
+          <Card className="shadow-xl border-stone-700 bg-stone-800/90 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                <User className="text-pink-600" />
-                Build Your Link Hub
-              </CardTitle>
+              <CardTitle className="text-2xl text-center text-stone-100">Profile Information</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Profile Image Upload */}
-              <div className="text-center">
-                <div className="relative inline-block">
-                  {profileImage ? (
-                    <img 
-                      src={profileImage} 
-                      alt="Profile" 
-                      className="w-24 h-24 rounded-full object-cover border-4 border-pink-300"
-                    />
-                  ) : (
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-300 to-gray-300 flex items-center justify-center border-4 border-pink-300">
-                      <User className="w-10 h-10 text-white" />
-                    </div>
-                  )}
-                  <label className="absolute bottom-0 right-0 bg-pink-600 text-white p-2 rounded-full cursor-pointer hover:bg-pink-700 transition-colors">
-                    <Camera className="w-4 h-4" />
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Name Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Display Name
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name or brand"
-                  className="w-full px-4 py-3 border-2 border-pink-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all"
-                />
-              </div>
-
-              {/* Bio Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Bio
-                </label>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell people about yourself..."
-                  rows={3}
-                  className="w-full px-4 py-3 border-2 border-pink-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all resize-none"
-                />
-              </div>
-
-              {/* Add Link Section */}
-              <div className="border-2 border-dashed border-pink-300 rounded-lg p-4 bg-pink-50/50">
-                <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Plus className="text-pink-600" />
-                  Add New Link
-                </h3>
-                
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={currentTitle}
-                    onChange={(e) => setCurrentTitle(e.target.value)}
-                    placeholder="Link title"
-                    className="w-full px-4 py-2 border-2 border-pink-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all"
-                  />
-                  
-                  <input
-                    type="url"
-                    value={currentUrl}
-                    onChange={(e) => setCurrentUrl(e.target.value)}
-                    placeholder="https://..."
-                    className="w-full px-4 py-2 border-2 border-pink-200 rounded-lg focus:border-pink-500 focus:ring-2 focus:ring-pink-200 transition-all"
-                  />
-                  
-                  {/* Icon Selector */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Choose Platform
-                    </label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[
-                        { name: 'instagram', icon: Instagram, color: 'text-pink-500' },
-                        { name: 'twitter', icon: Twitter, color: 'text-blue-400' },
-                        { name: 'youtube', icon: Youtube, color: 'text-red-500' },
-                        { name: 'linkedin', icon: Linkedin, color: 'text-blue-600' },
-                        { name: 'github', icon: Github, color: 'text-gray-800' },
-                        { name: 'music', icon: Music, color: 'text-purple-500' },
-                        { name: 'globe', icon: Globe, color: 'text-green-500' },
-                        { name: 'link', icon: ExternalLink, color: 'text-gray-600' },
-                      ].map((platform) => (
-                        <button
-                          key={platform.name}
-                          onClick={() => setCurrentIcon(platform.name)}
-                          className={`p-3 rounded-lg border-2 transition-all ${
-                            currentIcon === platform.name
-                              ? 'border-pink-500 bg-pink-100'
-                              : 'border-gray-200 hover:border-pink-300'
-                          }`}
-                        >
-                          <platform.icon className={`w-6 h-6 ${platform.color}`} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <Button 
-                    onClick={addLink} 
-                    className="w-full bg-gradient-to-r from-pink-600 to-gray-600 hover:from-pink-700 hover:to-gray-700 text-white font-semibold py-3"
-                    disabled={!currentTitle || !currentUrl}
-                  >
-                    Add Link
-                  </Button>
-                </div>
-              </div>
-
-              {/* Links List */}
-              {links.length > 0 && (
+              {/* Basic Info */}
+              <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold text-gray-800 mb-3">Your Links</h3>
-                  <div className="space-y-2">
-                    {links.map((link, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="flex items-center gap-3">
-                          {getIcon(link.icon)}
-                          <div>
-                            <p className="font-medium text-gray-800">{link.title}</p>
-                            <p className="text-sm text-gray-500 truncate max-w-48">{link.url}</p>
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeLink(index)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                  <label className="block text-sm font-medium text-stone-200 mb-2">Your Name</label>
+                  <Input
+                    placeholder="Enter your name or business name"
+                    value={profileData.name}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, name: e.target.value }))}
+                    className="text-lg bg-stone-700 border-stone-600 text-stone-100 placeholder:text-stone-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-200 mb-2">Bio</label>
+                  <Input
+                    placeholder="Tell people about yourself or your business"
+                    value={profileData.bio}
+                    onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+                    className="bg-stone-700 border-stone-600 text-stone-100 placeholder:text-stone-400"
+                  />
+                </div>
+              </div>
+
+              {/* Links Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold text-stone-100">Your Links</h3>
+                  <Button onClick={addLink} variant="outline" size="sm" className="border-amber-600 text-amber-200 hover:bg-amber-900/30">Add Link</Button>
+                </div>
+                
+                {profileData.links.map((link) => (
+                  <Card key={link.id} className="p-4 border-stone-600 bg-stone-700/50">
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <select
+                          value={link.icon}
+                          onChange={(e) => updateLink(link.id, 'icon', e.target.value)}
+                          className="px-3 py-2 border border-stone-600 rounded-md text-sm bg-stone-700 text-stone-100"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <option value="link">Link</option>
+                          <option value="instagram">Instagram</option>
+                          <option value="twitter">Twitter</option>
+                          <option value="facebook">Facebook</option>
+                          <option value="youtube">YouTube</option>
+                        </select>
+                        <Input
+                          placeholder="Link title"
+                          value={link.title}
+                          onChange={(e) => updateLink(link.id, 'title', e.target.value)}
+                          className="flex-1 bg-stone-700 border-stone-600 text-stone-100 placeholder:text-stone-400"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="https://..."
+                          value={link.url}
+                          onChange={(e) => updateLink(link.id, 'url', e.target.value)}
+                          className="flex-1 bg-stone-700 border-stone-600 text-stone-100 placeholder:text-stone-400"
+                        />
+                        <Button 
+                          onClick={() => removeLink(link.id)}
+                          variant="destructive" 
+                          size="sm"
+                        >
+                          Remove
                         </Button>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Preview Section */}
-          <Card className="p-6 bg-gradient-to-br from-pink-100 to-gray-100 border-pink-200 shadow-xl">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <Eye className="text-pink-600" />
-                  Preview
-                </CardTitle>
-                {(name || bio || links.length > 0) && (
-                  <Button
-                    onClick={handleShare}
-                    variant="outline"
-                    size="sm"
-                    className="border-pink-300 text-pink-700 hover:bg-pink-50"
-                  >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="max-w-sm mx-auto bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-pink-200">
-                <div className="bg-gradient-to-r from-pink-500 to-gray-500 p-6 text-center">
-                  {profileImage ? (
-                    <img 
-                      src={profileImage} 
-                      alt="Profile" 
-                      className="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-white"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-full bg-white/20 mx-auto mb-4 flex items-center justify-center border-4 border-white">
-                      <User className="w-8 h-8 text-white" />
                     </div>
-                  )}
-                  <h2 className="text-xl font-bold text-white mb-2">
-                    {name || 'Your Name'}
-                  </h2>
-                  <p className="text-pink-100 text-sm">
-                    {bio || 'Your bio will appear here...'}
-                  </p>
-                </div>
-                
-                <div className="p-6 space-y-3">
-                  {links.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">
-                      Add links to see them here
-                    </p>
-                  ) : (
-                    links.map((link, index) => (
-                      <a
-                        key={index}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-3 p-4 bg-gradient-to-r from-pink-50 to-gray-50 rounded-xl border border-pink-200 hover:from-pink-100 hover:to-gray-100 transition-all duration-200 hover:scale-105 hover:shadow-md"
-                      >
-                        {getIcon(link.icon)}
-                        <span className="font-medium text-gray-800">{link.title}</span>
-                        <ExternalLink className="w-4 h-4 text-gray-400 ml-auto" />
-                      </a>
-                    ))
-                  )}
-                </div>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 pt-6">
+                <Button 
+                  onClick={() => setCurrentView('landing')}
+                  variant="outline" 
+                  className="flex-1 border-stone-600 text-stone-200 hover:bg-stone-700"
+                >
+                  Back
+                </Button>
+                <Button 
+                  onClick={handlePreview}
+                  className="flex-1 bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900"
+                >
+                  Preview
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
+      </div>
+    );
+  }
+
+  // Preview View
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-stone-900 via-amber-900 to-stone-800 py-8">
+      <div className="container mx-auto px-4 max-w-md">
+        <div className="text-center mb-6">
+          <Button 
+            onClick={() => setCurrentView('create')}
+            variant="outline" 
+            className="mb-4 border-amber-600 text-amber-200 hover:bg-amber-900/30"
+          >
+            ← Edit Profile
+          </Button>
+        </div>
+
+        {/* Profile Preview */}
+        <Card className="shadow-2xl border-stone-700 bg-stone-800/95 backdrop-blur-sm overflow-hidden">
+          <CardContent className="p-0">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-amber-800 to-stone-700 p-8 text-center text-white">
+              <div className="w-24 h-24 bg-stone-600/40 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl font-bold border-2 border-stone-400">
+                {profileData.name.charAt(0).toUpperCase()}
+              </div>
+              <h1 className="text-2xl font-bold mb-2">{profileData.name}</h1>
+              {profileData.bio && (
+                <p className="text-stone-200 text-sm">{profileData.bio}</p>
+              )}
+            </div>
+
+            {/* Links */}
+            <div className="p-6 space-y-4">
+              {profileData.links.length === 0 ? (
+                <p className="text-center text-stone-400 py-8">No links added yet</p>
+              ) : (
+                profileData.links.map((link) => (
+                  <a
+                    key={link.id}
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block w-full p-4 bg-gradient-to-r from-stone-700 to-stone-600 hover:from-amber-800 hover:to-stone-700 border border-stone-600 rounded-xl transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="text-amber-200">
+                        {getIcon(link.icon)}
+                      </div>
+                      <span className="font-medium text-stone-100">{link.title || 'Untitled Link'}</span>
+                    </div>
+                  </a>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="text-center p-4 border-t border-stone-600 bg-stone-700/50">
+              <Badge variant="outline" className="text-xs border-amber-600 text-amber-200">
+                Powered by Uganda Bio Connect
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
