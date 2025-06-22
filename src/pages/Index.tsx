@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Link2, Instagram, Twitter, Facebook, Youtube } from "lucide-react";
+import { Link2, Instagram, Twitter, Facebook, Youtube, Github, Linkedin, Music, Video, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Index = () => {
@@ -68,6 +68,11 @@ const Index = () => {
       case 'twitter': return <Twitter className="w-5 h-5" />;
       case 'facebook': return <Facebook className="w-5 h-5" />;
       case 'youtube': return <Youtube className="w-5 h-5" />;
+      case 'github': return <Github className="w-5 h-5" />;
+      case 'linkedin': return <Linkedin className="w-5 h-5" />;
+      case 'soundcloud': return <Music className="w-5 h-5" />;
+      case 'tiktok': return <Video className="w-5 h-5" />;
+      case 'website': return <Globe className="w-5 h-5" />;
       default: return <Link2 className="w-5 h-5" />;
     }
   };
@@ -82,7 +87,7 @@ const Index = () => {
               Uganda Bio Connect
             </h1>
             <p className="text-xl md:text-2xl text-stone-300 mb-8 max-w-2xl mx-auto">
-              Connect your business with Uganda. One link, endless possibilities.
+              Connect your business, music, or personal brand with Uganda. One link, endless possibilities for entrepreneurs, musicians, influencers & developers.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 
@@ -113,7 +118,7 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-center text-stone-300">
-                  Create your professional bio link in minutes. No technical skills required.
+                  Create your professional bio link in minutes. Perfect for businesses, artists, and creators.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -123,11 +128,11 @@ const Index = () => {
                 <div className="w-16 h-16 bg-gradient-to-br from-stone-600 to-stone-700 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Instagram className="w-8 h-8 text-white" />
                 </div>
-                <CardTitle className="text-xl font-bold text-stone-100">Social Integration</CardTitle>
+                <CardTitle className="text-xl font-bold text-stone-100">All Platforms</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-center text-stone-300">
-                  Connect all your social media, website, and business platforms in one place.
+                  Connect Instagram, GitHub, SoundCloud, LinkedIn, TikTok, and all your digital platforms.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -141,7 +146,7 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-center text-stone-300">
-                  Built specifically for Ugandan entrepreneurs and small businesses.
+                  Built for Ugandan entrepreneurs, musicians, influencers, developers, and creators.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -149,8 +154,8 @@ const Index = () => {
 
           {/* Call to Action */}
           <div className="text-center bg-gradient-to-r from-amber-800 to-stone-700 rounded-2xl p-8 text-white border border-stone-600">
-            <h2 className="text-3xl font-bold mb-4">Ready to grow your business?</h2>
-            <p className="text-xl mb-6 opacity-90">Join hundreds of Ugandan entrepreneurs already using Bio Connect</p>
+            <h2 className="text-3xl font-bold mb-4">Ready to grow your presence?</h2>
+            <p className="text-xl mb-6 opacity-90">Join hundreds of Ugandan creators, entrepreneurs, and professionals already using Bio Connect</p>
             <Button 
               onClick={handleCreateProfile}
               size="lg" 
@@ -216,11 +221,16 @@ const Index = () => {
                           onChange={(e) => updateLink(link.id, 'icon', e.target.value)}
                           className="px-3 py-2 border border-stone-600 rounded-md text-sm bg-stone-700 text-stone-100"
                         >
-                          <option value="link">Link</option>
+                          <option value="link">General Link</option>
+                          <option value="website">Website</option>
                           <option value="instagram">Instagram</option>
                           <option value="twitter">Twitter</option>
                           <option value="facebook">Facebook</option>
                           <option value="youtube">YouTube</option>
+                          <option value="tiktok">TikTok</option>
+                          <option value="github">GitHub</option>
+                          <option value="linkedin">LinkedIn</option>
+                          <option value="soundcloud">SoundCloud</option>
                         </select>
                         <Input
                           placeholder="Link title"
