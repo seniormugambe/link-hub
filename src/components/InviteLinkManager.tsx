@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,6 +66,9 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const { toast } = useToast();
+  const [recentInvite, setRecentInvite] = useState<InviteLink | null>(null);
+  const [showRecentModal, setShowRecentModal] = useState(false);
+  const recentRef = useRef<HTMLDivElement | null>(null);
 
   const [newInvite, setNewInvite] = useState({
     title: '',
@@ -158,10 +161,18 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
       return;
     }
     if (data && data[0]) {
-      setInviteLinks(prev => [{
+      const newLink = {
         ...data[0],
         inviteUrl: `${window.location.origin}/invite/${data[0].id}`,
-      }, ...prev]);
+      };
+      setInviteLinks(prev => [newLink, ...prev]);
+      setRecentInvite(newLink);
+      setShowRecentModal(true);
+      setTimeout(() => {
+        if (recentRef.current) {
+          recentRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
     }
     setNewInvite({
       title: '',
@@ -505,6 +516,32 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
         </Dialog>
       </div>
 
+      {/* Modal for recent invite */}
+      {showRecentModal && recentInvite && (
+        <Dialog open={showRecentModal} onOpenChange={setShowRecentModal}>
+          <DialogContent className="max-w-md border-amber-700 bg-stone-900 text-stone-100">
+            <DialogHeader>
+              <DialogTitle className="text-lg">Invitation Created!</DialogTitle>
+              <DialogDescription className="text-stone-300">
+                Here is your new invitation link. You can copy or share it now.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex items-center gap-2 mb-4">
+              <Input value={recentInvite.inviteUrl} readOnly className="bg-stone-800 border-stone-700 text-stone-100 text-sm" />
+              <Button onClick={() => copyInviteLink(recentInvite.inviteUrl, recentInvite.id)} variant="outline" size="sm" className="border-amber-600 text-amber-200 hover:bg-amber-900/30">
+                {copiedId === recentInvite.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              </Button>
+              <Button onClick={() => window.open(recentInvite.inviteUrl, '_blank')} variant="outline" size="sm" className="border-amber-600 text-amber-200 hover:bg-amber-900/30">
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button onClick={() => setShowRecentModal(false)} className="bg-gradient-to-r from-amber-700 to-amber-800 text-white">Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Invitation Links List */}
       <div className="space-y-4">
         {inviteLinks.length === 0 ? (
@@ -527,180 +564,182 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
             </CardContent>
           </Card>
         ) : (
-          inviteLinks.map((invite) => (
-            <Card key={invite.id} className="shadow-xl border-stone-700 bg-stone-800/90 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-stone-100">{invite.title}</h3>
-                      <Badge 
-                        variant={invite.isActive ? "default" : "secondary"}
-                        className={invite.isActive ? "bg-green-900/30 text-green-200 border-green-600" : "bg-stone-700 text-stone-300 border-stone-600"}
-                      >
-                        {invite.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                      {isExpired(invite.expiresAt) && (
-                        <Badge variant="destructive">Expired</Badge>
+          inviteLinks.map((invite, idx) => (
+            <div key={invite.id} ref={idx === 0 && recentInvite && invite.id === recentInvite.id ? recentRef : undefined}>
+              <Card className={`shadow-xl border-stone-700 bg-stone-800/90 backdrop-blur-sm ${recentInvite && invite.id === recentInvite.id ? 'ring-4 ring-amber-400' : ''}`}>
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-semibold text-stone-100">{invite.title}</h3>
+                        <Badge 
+                          variant={invite.isActive ? "default" : "secondary"}
+                          className={invite.isActive ? "bg-green-900/30 text-green-200 border-green-600" : "bg-stone-700 text-stone-300 border-stone-600"}
+                        >
+                          {invite.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                        {isExpired(invite.expiresAt) && (
+                          <Badge variant="destructive">Expired</Badge>
+                        )}
+                      </div>
+                      {invite.description && (
+                        <p className="text-stone-400 text-sm mb-3">{invite.description}</p>
                       )}
-                    </div>
-                    {invite.description && (
-                      <p className="text-stone-400 text-sm mb-3">{invite.description}</p>
-                    )}
-                    {invite.catalogue && invite.catalogue.length > 0 && (
-                      <div className="mt-4">
-                        <h4 className="font-semibold text-stone-100 mb-2">Catalogue</h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {invite.catalogue.map((item, idx) => (
-                            <div key={idx} className="bg-stone-700 rounded-lg p-4 flex flex-col items-center shadow">
-                              {item.image && (
-                                <img src={item.image} alt={item.title} className="w-full h-32 object-cover rounded mb-2" />
-                              )}
-                              <div className="font-bold text-stone-100 text-center">{item.title}</div>
-                              <div className="text-stone-300 text-sm mb-2 text-center">{item.description}</div>
-                              {item.price && <div className="text-amber-400 font-semibold">{item.price}</div>}
-                              {item.link && (
-                                <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline text-sm mt-1">
-                                  View
-                                </a>
-                              )}
-                            </div>
-                          ))}
+                      {invite.catalogue && invite.catalogue.length > 0 && (
+                        <div className="mt-4">
+                          <h4 className="font-semibold text-stone-100 mb-2">Catalogue</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {invite.catalogue.map((item, idx) => (
+                              <div key={idx} className="bg-stone-700 rounded-lg p-4 flex flex-col items-center shadow">
+                                {item.image && (
+                                  <img src={item.image} alt={item.title} className="w-full h-32 object-cover rounded mb-2" />
+                                )}
+                                <div className="font-bold text-stone-100 text-center">{item.title}</div>
+                                <div className="text-stone-300 text-sm mb-2 text-center">{item.description}</div>
+                                {item.price && <div className="text-amber-400 font-semibold">{item.price}</div>}
+                                {item.link && (
+                                  <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline text-sm mt-1">
+                                    View
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center gap-4 text-xs text-stone-500">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          Created {formatDate(invite.createdAt)}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Eye className="w-3 h-3" />
+                          {invite.views} views
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3" />
+                          {invite.clicks} clicks
                         </div>
                       </div>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-stone-500">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3" />
-                        Created {formatDate(invite.createdAt)}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        {invite.views} views
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Users className="w-3 h-3" />
-                        {invite.clicks} clicks
-                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => toggleInviteStatus(invite.id)}
+                        className="text-stone-400 hover:text-stone-200"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteInviteLink(invite.id)}
+                        className="text-red-400 hover:text-red-300"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
+
+                  <div className="flex items-center gap-2 mb-4">
+                    <Input
+                      value={invite.inviteUrl}
+                      readOnly
+                      className="bg-stone-700 border-stone-600 text-stone-100 text-sm"
+                    />
+                    <Button
+                      onClick={() => copyInviteLink(invite.inviteUrl, invite.id)}
+                      variant="outline"
+                      size="sm"
+                      className="border-amber-600 text-amber-200 hover:bg-amber-900/30"
+                    >
+                      {copiedId === invite.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    </Button>
+                    <Button
+                      onClick={() => window.open(invite.inviteUrl, '_blank')}
+                      variant="outline"
+                      size="sm"
+                      className="border-amber-600 text-amber-200 hover:bg-amber-900/30"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </Button>
+                  </div>
+
                   <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
+                    <Badge variant="secondary" className="bg-stone-700 text-stone-300 border-stone-600">
+                      {invite.links.length} links
+                    </Badge>
+                    {/* ShareButton component is not defined in the original file, assuming it's a placeholder */}
+                    {/* <ShareButton
+                      profileUrl={invite.inviteUrl}
+                      profileName={invite.title}
+                      variant="outline"
                       size="sm"
-                      onClick={() => toggleInviteStatus(invite.id)}
-                      className="text-stone-400 hover:text-stone-200"
+                      className="border-amber-600 text-amber-200 hover:bg-amber-900/30"
                     >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => deleteInviteLink(invite.id)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Share
+                    </ShareButton> */}
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-4">
-                  <Input
-                    value={invite.inviteUrl}
-                    readOnly
-                    className="bg-stone-700 border-stone-600 text-stone-100 text-sm"
-                  />
-                  <Button
-                    onClick={() => copyInviteLink(invite.inviteUrl, invite.id)}
-                    variant="outline"
-                    size="sm"
-                    className="border-amber-600 text-amber-200 hover:bg-amber-900/30"
-                  >
-                    {copiedId === invite.id ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                  </Button>
-                  <Button
-                    onClick={() => window.open(invite.inviteUrl, '_blank')}
-                    variant="outline"
-                    size="sm"
-                    className="border-amber-600 text-amber-200 hover:bg-amber-900/30"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="bg-stone-700 text-stone-300 border-stone-600">
-                    {invite.links.length} links
-                  </Badge>
-                  {/* ShareButton component is not defined in the original file, assuming it's a placeholder */}
-                  {/* <ShareButton
-                    profileUrl={invite.inviteUrl}
-                    profileName={invite.title}
-                    variant="outline"
-                    size="sm"
-                    className="border-amber-600 text-amber-200 hover:bg-amber-900/30"
-                  >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Share
-                  </ShareButton> */}
-                </div>
-                {isPremium && invite.analytics && (
-                  <div className="mt-4">
-                    <h4 className="font-semibold text-stone-100 mb-2">Advanced Analytics</h4>
-                    <div className="overflow-x-auto">
-                      <table className="min-w-full text-xs text-stone-200 border border-stone-700">
-                        <thead>
-                          <tr>
-                            <th className="px-2 py-1 border-b border-stone-700">Time</th>
-                            <th className="px-2 py-1 border-b border-stone-700">Type</th>
-                            <th className="px-2 py-1 border-b border-stone-700">Location</th>
-                            <th className="px-2 py-1 border-b border-stone-700">Device</th>
-                            <th className="px-2 py-1 border-b border-stone-700">Referral</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {invite.analytics.map((a, i) => (
-                            <tr key={i}>
-                              <td className="px-2 py-1 border-b border-stone-800">{new Date(a.timestamp).toLocaleString()}</td>
-                              <td className="px-2 py-1 border-b border-stone-800">{a.type}</td>
-                              <td className="px-2 py-1 border-b border-stone-800">{a.location}</td>
-                              <td className="px-2 py-1 border-b border-stone-800">{a.device}</td>
-                              <td className="px-2 py-1 border-b border-stone-800">{a.referral}</td>
+                  {isPremium && invite.analytics && (
+                    <div className="mt-4">
+                      <h4 className="font-semibold text-stone-100 mb-2">Advanced Analytics</h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-xs text-stone-200 border border-stone-700">
+                          <thead>
+                            <tr>
+                              <th className="px-2 py-1 border-b border-stone-700">Time</th>
+                              <th className="px-2 py-1 border-b border-stone-700">Type</th>
+                              <th className="px-2 py-1 border-b border-stone-700">Location</th>
+                              <th className="px-2 py-1 border-b border-stone-700">Device</th>
+                              <th className="px-2 py-1 border-b border-stone-700">Referral</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {invite.analytics.map((a, i) => (
+                              <tr key={i}>
+                                <td className="px-2 py-1 border-b border-stone-800">{new Date(a.timestamp).toLocaleString()}</td>
+                                <td className="px-2 py-1 border-b border-stone-800">{a.type}</td>
+                                <td className="px-2 py-1 border-b border-stone-800">{a.location}</td>
+                                <td className="px-2 py-1 border-b border-stone-800">{a.device}</td>
+                                <td className="px-2 py-1 border-b border-stone-800">{a.referral}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <button
+                        className="mt-2 px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
+                        onClick={() => {
+                          // Export to CSV logic
+                          const csv = [
+                            ['Time', 'Type', 'Location', 'Device', 'Referral'],
+                            ...invite.analytics.map(a => [
+                              new Date(a.timestamp).toLocaleString(),
+                              a.type,
+                              a.location,
+                              a.device,
+                              a.referral
+                            ])
+                          ].map(row => row.join(',')).join('\n');
+                          const blob = new Blob([csv], { type: 'text/csv' });
+                          const url = URL.createObjectURL(blob);
+                          const link = document.createElement('a');
+                          link.href = url;
+                          link.download = `${invite.title}-analytics.csv`;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                        }}
+                      >
+                        Export to CSV
+                      </button>
                     </div>
-                    <button
-                      className="mt-2 px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
-                      onClick={() => {
-                        // Export to CSV logic
-                        const csv = [
-                          ['Time', 'Type', 'Location', 'Device', 'Referral'],
-                          ...invite.analytics.map(a => [
-                            new Date(a.timestamp).toLocaleString(),
-                            a.type,
-                            a.location,
-                            a.device,
-                            a.referral
-                          ])
-                        ].map(row => row.join(',')).join('\n');
-                        const blob = new Blob([csv], { type: 'text/csv' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `${invite.title}-analytics.csv`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                    >
-                      Export to CSV
-                    </button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           ))
         )}
       </div>

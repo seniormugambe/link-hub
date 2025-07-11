@@ -22,12 +22,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import ShareButton from "@/components/ShareButton";
 import InviteLinkManager from "@/components/InviteLinkManager";
+import InviteAnalyticsDashboard from "@/components/InviteAnalyticsDashboard";
 import { supabase } from '../lib/supabaseClient';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<'profile' | 'invites'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'invites' | 'analytics'>('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
     name: user?.name || 'Your Name',
@@ -238,6 +239,17 @@ const Dashboard = () => {
           >
             <Share2 className="w-4 h-4 mr-2" />
             Invitations
+          </Button>
+          <Button
+            variant={activeTab === 'analytics' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('analytics')}
+            className={activeTab === 'analytics' 
+              ? 'bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-700 hover:to-yellow-700 text-white' 
+              : 'border-slate-600 text-slate-300 hover:bg-slate-700/30'
+            }
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            Analytics
           </Button>
         </div>
 
@@ -454,6 +466,9 @@ const Dashboard = () => {
 
         {activeTab === 'invites' && (
           <InviteLinkManager isPremium={isPremium} />
+        )}
+        {activeTab === 'analytics' && (
+          <InviteAnalyticsDashboard />
         )}
 
         {/* Premium Feature Example */}

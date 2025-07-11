@@ -412,10 +412,10 @@ const Index = () => {
         <div className="container mx-auto px-4 py-16">
           <div className="text-center mb-16">
             <h1 className="text-5xl md:text-7xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-teal-400 bg-clip-text text-transparent mb-6">
-              Uganda Bio Connect
+              Link-Hub
             </h1>
             <p className="text-xl md:text-2xl text-slate-300 mb-8 max-w-2xl mx-auto">
-              Connect your business with Uganda. One link, endless possibilities.
+              Connect your business . One link, endless possibilities.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Button 

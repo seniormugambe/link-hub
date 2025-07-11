@@ -5,6 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Link2, Instagram, Twitter, Facebook, Youtube, Share2, ArrowLeft, ExternalLink, Heart, MessageCircle, Calendar } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
+import { supabase } from "../lib/supabaseClient";
+import { useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface InviteData {
   id: string;
@@ -29,6 +32,43 @@ interface InviteData {
   };
   createdAt: string;
   expiresAt?: string;
+  user_id: string; // Added for analytics
+}
+
+function getDeviceType() {
+  if (typeof window === 'undefined') return '';
+  const ua = navigator.userAgent;
+  if (/Mobi|Android/i.test(ua)) return 'mobile';
+  if (/iPad|Tablet/i.test(ua)) return 'tablet';
+  return 'desktop';
+}
+function getBrowserOS() {
+  if (typeof window === 'undefined') return '';
+  const ua = navigator.userAgent;
+  let browser = 'Unknown';
+  if (ua.indexOf('Chrome') > -1) browser = 'Chrome';
+  else if (ua.indexOf('Safari') > -1) browser = 'Safari';
+  else if (ua.indexOf('Firefox') > -1) browser = 'Firefox';
+  else if (ua.indexOf('MSIE') > -1 || ua.indexOf('Trident/') > -1) browser = 'IE';
+  let os = 'Unknown';
+  if (ua.indexOf('Win') > -1) os = 'Windows';
+  else if (ua.indexOf('Mac') > -1) os = 'MacOS';
+  else if (ua.indexOf('Linux') > -1) os = 'Linux';
+  else if (ua.indexOf('Android') > -1) os = 'Android';
+  else if (ua.indexOf('like Mac') > -1) os = 'iOS';
+  return `${browser} on ${os}`;
+}
+async function logInviteAnalytics({ inviteId, type, location, browserOS }) {
+  await supabase.from('invitation_analytics').insert([
+    {
+      invite_id: inviteId,
+      type,
+      device: getDeviceType(),
+      location: location || '',
+      referral: document.referrer || '',
+      browser_os: browserOS || '',
+    }
+  ]);
 }
 
 const InviteView = () => {
@@ -38,85 +78,55 @@ const InviteView = () => {
   const [inviteData, setInviteData] = useState<InviteData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [geoLocation, setGeoLocation] = useState('');
+  const [browserOS, setBrowserOS] = useState('');
+  const { user } = useAuth();
+  const [analytics, setAnalytics] = useState([]);
 
   // Mock data for demonstration - in a real app, this would come from an API
   useEffect(() => {
+    // Fetch geolocation
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        setGeoLocation(data.city && data.country_name ? `${data.city}, ${data.country_name}` : data.country_name || '');
+      })
+      .catch(() => setGeoLocation(''));
+    setBrowserOS(getBrowserOS());
+
     const fetchInviteData = async () => {
       try {
         setLoading(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Mock data - replace with actual API call
-        const mockData: InviteData = {
-          id: inviteId || 'demo-invite',
-          title: "Welcome to Our Special Collection",
-          description: "Curated links and resources just for you. Explore what we've prepared!",
-          hostName: "Sarah Johnson",
-          hostAvatar: "",
-          hostBio: "Digital creator and community builder passionate about connecting people through meaningful content.",
-          links: [
-            {
-              id: "1",
-              title: "Exclusive Content",
-              url: "https://example.com/exclusive",
-              icon: "link",
-              description: "Access to premium content and resources"
-            },
-            {
-              id: "2", 
-              title: "Join Our Community",
-              url: "https://example.com/community",
-              icon: "instagram",
-              description: "Connect with like-minded individuals"
-            },
-            {
-              id: "3",
-              title: "Special Offer",
-              url: "https://example.com/offer", 
-              icon: "link",
-              description: "Limited time discount just for you"
-            },
-            {
-              id: "4",
-              title: "Feedback Survey",
-              url: "https://example.com/survey",
-              icon: "link", 
-              description: "Help us improve by sharing your thoughts"
-            }
-          ],
-          catalogue: [
-            {
-              title: "Premium Digital Art",
-              image: "https://via.placeholder.com/150",
-              description: "Exclusive collection of digital artworks by renowned artists.",
-              price: "$1,200",
-              link: "https://example.com/art"
-            },
-            {
-              title: "Eco-Friendly Sustainable Products",
-              image: "https://via.placeholder.com/150",
-              description: "Explore a range of eco-friendly products for a sustainable lifestyle.",
-              price: "$50 - $200",
-              link: "https://example.com/sustainable"
-            },
-            {
-              title: "Virtual Reality Experience",
-              image: "https://via.placeholder.com/150",
-              description: "Step into a new world with our immersive VR experience.",
-              price: "$15",
-              link: "https://example.com/vr"
-            }
-          ],
-          theme: {
-            primaryColor: "amber",
-            backgroundColor: "stone"
-          },
-          createdAt: new Date().toISOString(),
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
-        };
-        
-        setInviteData(mockData);
+        if (!inviteId) {
+          setError("No invitation ID provided.");
+          setLoading(false);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('invitations')
+          .select('*')
+          .eq('id', inviteId)
+          .single();
+        if (error || !data) {
+          setError("Invitation not found.");
+          setLoading(false);
+          return;
+        }
+        // Map Supabase data to InviteData
+        setInviteData({
+          id: data.id,
+          title: data.title,
+          description: data.description,
+          hostName: data.host_name || '',
+          hostAvatar: data.host_avatar || '',
+          hostBio: data.host_bio || '',
+          links: data.links || [],
+          catalogue: data.catalogue || [],
+          theme: data.theme || {},
+          createdAt: data.created_at,
+          expiresAt: data.expires_at,
+          user_id: data.user_id, // Ensure user_id is mapped
+        });
       } catch (err) {
         setError("Failed to load invitation. Please check the link and try again.");
       } finally {
@@ -125,11 +135,23 @@ const InviteView = () => {
     };
 
     fetchInviteData();
+    // Log a view event if inviteId exists
+    if (inviteId) {
+      logInviteAnalytics({ inviteId, type: 'view', location: geoLocation, browserOS });
+      // Fetch analytics for this invite
+      supabase
+        .from('invitation_analytics')
+        .select('id, type')
+        .eq('invite_id', inviteId)
+        .then(({ data }) => setAnalytics(data || []));
+    }
   }, [inviteId]);
 
   const handleLinkClick = (url: string, title: string) => {
     // Track link click analytics here
-    console.log(`Link clicked: ${title} -> ${url}`);
+    if (inviteId) {
+      logInviteAnalytics({ inviteId, type: 'click', location: geoLocation, browserOS });
+    }
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
@@ -156,9 +178,29 @@ const InviteView = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-stone-900 via-amber-900 to-stone-800 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-200 mx-auto mb-4"></div>
-          <p className="text-stone-300">Loading your invitation...</p>
+        <div className="w-full max-w-xl mx-auto p-6">
+          {/* Main card skeleton */}
+          <div className="bg-stone-800 rounded-lg shadow p-8 mb-8 animate-pulse">
+            <div className="h-8 w-1/2 bg-stone-700 rounded mb-4"></div>
+            <div className="h-4 w-1/3 bg-stone-700 rounded mb-6"></div>
+            <div className="h-16 w-full bg-stone-700 rounded mb-6"></div>
+            <div className="flex gap-4 mb-4">
+              <div className="h-10 w-24 bg-stone-700 rounded"></div>
+              <div className="h-10 w-24 bg-stone-700 rounded"></div>
+            </div>
+          </div>
+          {/* Catalogue skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {[0,1].map(i => (
+              <div key={i} className="bg-stone-800 rounded-lg p-6 flex flex-col items-center shadow animate-pulse">
+                <div className="w-full h-40 bg-stone-700 rounded mb-4"></div>
+                <div className="h-6 w-1/2 bg-stone-700 rounded mb-2"></div>
+                <div className="h-4 w-2/3 bg-stone-700 rounded mb-2"></div>
+                <div className="h-4 w-1/3 bg-stone-700 rounded mb-2"></div>
+                <div className="h-4 w-1/4 bg-stone-700 rounded"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -218,6 +260,25 @@ const InviteView = () => {
         </div>
       </nav>
 
+      {/* Analytics summary for owner */}
+      {user && inviteData && inviteData.user_id === user.id && (
+        <Card className="mb-6 bg-slate-800 border-slate-700">
+          <CardContent className="flex flex-col sm:flex-row gap-6 items-center justify-between py-6">
+            <div className="text-lg font-bold text-slate-100">Analytics Summary</div>
+            <div className="flex gap-8">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-cyan-400">{analytics.filter(a => a.type === 'view').length}</div>
+                <div className="text-slate-300 text-sm">Views</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-amber-400">{analytics.filter(a => a.type === 'click').length}</div>
+                <div className="text-slate-300 text-sm">Clicks</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main Card */}
       <div className="w-full max-w-2xl mt-24 mb-8">
         <Card className="shadow-2xl border-stone-700 bg-stone-800/95 backdrop-blur-sm overflow-hidden">
@@ -266,29 +327,24 @@ const InviteView = () => {
 
             {/* Catalogue */}
             {inviteData.catalogue && inviteData.catalogue.length > 0 && (
-              <div className="p-6 pt-0">
-                <h3 className="text-lg font-bold mb-4" style={{ color: inviteData.theme?.primaryColor || undefined }}>Catalogue</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="mt-8 w-full max-w-2xl mx-auto">
+                <h3 className="text-xl font-bold text-slate-100 mb-4">Catalogue</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {inviteData.catalogue.map((item, idx) => (
-                    <div key={idx} className="bg-stone-700/80 rounded-lg p-4 flex flex-col gap-2 shadow border border-stone-600">
-                      <div className="flex items-center gap-3 mb-2">
-                        {item.image && <img src={item.image} alt={item.title} className="w-16 h-16 object-cover rounded border border-stone-600" />}
-                        <div>
-                          <div className="font-semibold text-stone-100 text-base">{item.title}</div>
-                          {item.price && <div className="text-amber-300 font-bold text-sm">{item.price}</div>}
-                        </div>
-                      </div>
-                      <div className="text-stone-300 text-sm mb-2">{item.description}</div>
+                    <div key={idx} className="bg-stone-800 rounded-lg p-6 flex flex-col items-center shadow">
+                      <img
+                        src={item.image || "/placeholder.svg"}
+                        alt={item.title}
+                        className="w-full h-40 object-cover rounded mb-4"
+                        onError={e => { (e.currentTarget as HTMLImageElement).src = "/placeholder.svg"; }}
+                      />
+                      <div className="font-bold text-slate-100 text-lg mb-2 text-center">{item.title}</div>
+                      <div className="text-slate-300 text-sm mb-2 text-center">{item.description}</div>
+                      {item.price && <div className="text-amber-400 font-semibold mb-2">{item.price}</div>}
                       {item.link && (
-                        <Button
-                          asChild
-                          variant="outline"
-                          className="w-full border-amber-400 text-amber-200 hover:bg-amber-900/30 mt-2"
-                        >
-                          <a href={item.link} target="_blank" rel="noopener noreferrer">
-                            View Item <ExternalLink className="inline w-4 h-4 ml-1" />
-                          </a>
-                        </Button>
+                        <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline text-sm mt-1">
+                          View
+                        </a>
                       )}
                     </div>
                   ))}
