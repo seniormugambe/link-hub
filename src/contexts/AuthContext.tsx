@@ -63,32 +63,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const fetchUser = async () => {
       try {
         console.log('Fetching user from Supabase...');
-        const { data, error } = await supabase.auth.getUser();
+      const { data, error } = await supabase.auth.getUser();
         
         if (error) {
-          console.error('Error fetching user:', error);
-          setAuthError(error.message);
+          // Don't treat "Auth session missing" as an error - it's normal when no user is logged in
+          if (error.message === 'Auth session missing!') {
+            console.log('No active user session found - this is normal for new visitors');
+          } else {
+            console.error('Error fetching user:', error);
+            setAuthError(error.message);
+          }
           setIsLoading(false);
           return;
         }
         
-        if (data?.user) {
-          const { id, email, phone, user_metadata } = data.user;
-          const premium = await fetchPremiumStatus(id);
-          setUser({
-            id,
-            name: user_metadata?.name || '',
-            email: email || '',
-            phone: phone || '',
-            country_code: user_metadata?.country_code || '',
-            premium,
-          });
-        }
+      if (data?.user) {
+        const { id, email, phone, user_metadata } = data.user;
+        const premium = await fetchPremiumStatus(id);
+        setUser({
+          id,
+          name: user_metadata?.name || '',
+          email: email || '',
+          phone: phone || '',
+          country_code: user_metadata?.country_code || '',
+          premium,
+        });
+      }
       } catch (error) {
         console.error('Error in fetchUser:', error);
         setAuthError(error instanceof Error ? error.message : 'Unknown error');
       } finally {
-        setIsLoading(false);
+      setIsLoading(false);
       }
     };
     fetchUser();
