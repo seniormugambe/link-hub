@@ -16,7 +16,10 @@ import {
   Eye,
   Trash2,
   Edit,
-  ExternalLink
+  ExternalLink,
+  Palette,
+  Image,
+  Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from '../lib/supabaseClient';
@@ -117,7 +120,6 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
     }));
   };
 
-  // Fetch invitations from Supabase on mount
   useEffect(() => {
     const fetchInvites = async () => {
       if (!user) return;
@@ -136,7 +138,6 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
     fetchInvites();
   }, [user]);
 
-  // Create invitation in Supabase
   const createInviteLink = async () => {
     if (!user) return;
     if (!newInvite.title.trim()) {
@@ -211,7 +212,6 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
     }
   };
 
-  // Delete invitation in Supabase
   const deleteInviteLink = async (id: string) => {
     if (!user) return;
     const { error } = await supabase.from('invitations').delete().eq('id', id).eq('user_id', user.id);
@@ -244,7 +244,6 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
     return new Date(expiresAt) < new Date();
   };
 
-  // Only allow access if authenticated
   if (!isAuthenticated) {
     return <div className="p-4 text-center text-red-500">You must be logged in to manage invitations.</div>;
   }
@@ -264,251 +263,325 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
               Create Invitation
             </Button>
           </DialogTrigger>
-          <DialogContent
-            className="max-w-2xl border-stone-700 max-h-[80vh] overflow-y-auto rounded-lg shadow-lg"
-            style={isPremium ? { background: newInvite.theme.backgroundColor } : { background: 'rgba(24, 24, 27, 0.9)' }}
-          >
-            <DialogHeader>
-              <DialogTitle className="text-xl text-stone-100">Create New Invitation</DialogTitle>
-              <DialogDescription className="text-stone-300">
-                Create a special invitation with curated links for your audience
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 border-stone-700 shadow-2xl">
+            <DialogHeader className="text-center pb-6 border-b border-stone-700/50">
+              <div className="flex items-center justify-center mb-3">
+                <div className="p-3 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full shadow-lg">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-amber-600 bg-clip-text text-transparent">
+                Create New Invitation
+              </DialogTitle>
+              <DialogDescription className="text-stone-300 text-base">
+                Design a beautiful invitation with curated links for your audience
               </DialogDescription>
             </DialogHeader>
-            {/* Basic Info Section */}
-            <div className="mb-6">
-              <h4 className="font-semibold text-stone-100 mb-2">Basic Information</h4>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Input
-                  placeholder="Title *"
-                  value={newInvite.title}
-                  onChange={e => setNewInvite(prev => ({ ...prev, title: e.target.value }))}
-                  className="bg-stone-700 text-stone-100"
-                  maxLength={50}
-                  required
-                />
-                <Textarea
-                  placeholder="Description"
-                  value={newInvite.description}
-                  onChange={e => setNewInvite(prev => ({ ...prev, description: e.target.value }))}
-                  className="bg-stone-700 text-stone-100"
-                  rows={2}
-                  maxLength={200}
-                />
-              </div>
-            </div>
-            <hr className="my-4 border-stone-700" />
-            {/* Links Section */}
-            <div className="mb-6">
-              <h4 className="font-semibold text-stone-100 mb-2">Links</h4>
-              {newInvite.links.length === 0 && (
-                <div className="text-stone-400 mb-2">No links added yet.</div>
-              )}
-              <div className="space-y-2">
-                {newInvite.links.map((link, idx) => (
-                  <div key={link.id} className="grid grid-cols-1 md:grid-cols-4 gap-2 items-center bg-stone-700/50 p-2 rounded">
+
+            <div className="space-y-8 py-6">
+              {/* Basic Information Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <Edit className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-stone-100">Basic Information</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-stone-200">Title *</label>
                     <Input
-                      placeholder="Title"
-                      value={link.title}
-                      onChange={e => updateInviteLink(link.id, 'title', e.target.value)}
-                      className="bg-stone-800 text-stone-100"
+                      placeholder="Enter invitation title"
+                      value={newInvite.title}
+                      onChange={e => setNewInvite(prev => ({ ...prev, title: e.target.value }))}
+                      className="bg-stone-800/50 border-stone-600 text-stone-100 placeholder-stone-400 focus:border-amber-500 focus:ring-amber-500/20"
+                      maxLength={50}
+                      required
                     />
-                    <Input
-                      placeholder="URL"
-                      value={link.url}
-                      onChange={e => updateInviteLink(link.id, 'url', e.target.value)}
-                      className="bg-stone-800 text-stone-100"
-                    />
-                    <Input
-                      placeholder="Icon (e.g. link, user)"
-                      value={link.icon}
-                      onChange={e => updateInviteLink(link.id, 'icon', e.target.value)}
-                      className="bg-stone-800 text-stone-100"
-                    />
-                    <Button variant="ghost" size="sm" onClick={() => removeLinkFromInvite(link.id)} className="text-red-400 hover:text-red-200">Remove</Button>
+                    <p className="text-xs text-stone-400">{newInvite.title.length}/50 characters</p>
                   </div>
-                ))}
-              </div>
-              <Button type="button" variant="outline" className="mt-2 border-amber-400 text-amber-300" onClick={addLinkToInvite}>
-                + Add Link
-              </Button>
-            </div>
-            <hr className="my-4 border-stone-700" />
-            {/* Theme & Branding Section */}
-            <div className="mb-6">
-              <h4 className="font-semibold text-stone-100 mb-2">Theme & Branding <span className="ml-2 text-xs text-amber-400">Premium</span></h4>
-              {isPremium ? (
-                <div className="grid grid-cols-2 gap-4 items-end">
-                  <div>
-                    <label className="block text-stone-200 mb-1">Primary Color</label>
-                    <input
-                      type="color"
-                      value={newInvite.theme.primaryColor}
-                      onChange={e => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, primaryColor: e.target.value } }))}
-                      className="w-12 h-8 border-none bg-transparent"
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-stone-200">Description</label>
+                    <Textarea
+                      placeholder="Brief description of your invitation"
+                      value={newInvite.description}
+                      onChange={e => setNewInvite(prev => ({ ...prev, description: e.target.value }))}
+                      className="bg-stone-800/50 border-stone-600 text-stone-100 placeholder-stone-400 focus:border-amber-500 focus:ring-amber-500/20"
+                      rows={3}
+                      maxLength={200}
                     />
-                  </div>
-                  <div>
-                    <label className="block text-stone-200 mb-1">Background Color</label>
-                    <input
-                      type="color"
-                      value={newInvite.theme.backgroundColor}
-                      onChange={e => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, backgroundColor: e.target.value } }))}
-                      className="w-12 h-8 border-none bg-transparent"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-stone-200 mb-1">Font</label>
-                    <select
-                      value={newInvite.theme.font}
-                      onChange={e => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, font: e.target.value } }))}
-                      className="w-full p-2 rounded bg-stone-700 text-stone-100"
-                    >
-                      <option value="sans-serif">Sans Serif</option>
-                      <option value="serif">Serif</option>
-                      <option value="monospace">Monospace</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-stone-200 mb-1">Logo (optional)</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={e => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, logo: ev.target?.result as string } }));
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
-                      className="w-full p-2 rounded bg-stone-700 text-stone-100"
-                    />
-                    {newInvite.theme.logo && (
-                      <img src={newInvite.theme.logo} alt="Logo Preview" className="mt-2 w-16 h-16 object-contain rounded border border-stone-600" />
-                    )}
-                  </div>
-                  {/* Live Preview */}
-                  <div className="col-span-2 mt-4 p-4 rounded border border-stone-700" style={{ background: newInvite.theme.backgroundColor }}>
-                    <div className="flex items-center gap-4">
-                      {newInvite.theme.logo && <img src={newInvite.theme.logo} alt="Logo" className="w-10 h-10 rounded" />}
-                      <span style={{ color: newInvite.theme.primaryColor, fontFamily: newInvite.theme.font, fontWeight: 600, fontSize: 20 }}>
-                        {newInvite.title || 'Invitation Title'}
-                      </span>
-                    </div>
+                    <p className="text-xs text-stone-400">{newInvite.description.length}/200 characters</p>
                   </div>
                 </div>
-              ) : (
-                <div className="p-4 border-2 border-yellow-400 bg-yellow-100 text-yellow-900 rounded text-center opacity-70">
-                  <strong>Upgrade to Premium</strong> to unlock custom colors, fonts, and branding for your invitations!
+              </div>
+
+              {/* Links Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <Link2 className="w-5 h-5 text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-stone-100">Links</h3>
                 </div>
-              )}
-            </div>
-            <hr className="my-4 border-stone-700" />
-            {/* Catalogue Section */}
-            <div className="mb-6">
-              <h4 className="font-semibold text-stone-100 mb-2">Small Catalogue <span className="ml-2 text-xs text-amber-400">Premium</span></h4>
-              {isPremium ? (
-                <div className="space-y-4">
-                  {newInvite.catalogue.length === 0 && (
-                    <div className="text-stone-400 mb-2">No catalogue items added yet.</div>
-                  )}
-                  <div className="grid grid-cols-1 gap-4">
-                    {newInvite.catalogue.map((item, idx) => (
-                      <div key={idx} className="grid grid-cols-1 md:grid-cols-5 gap-2 items-center bg-stone-700/50 p-2 rounded">
-                        <Input
-                          placeholder="Title"
-                          value={item.title}
-                          onChange={e => setNewInvite(prev => {
-                            const catalogue = [...prev.catalogue];
-                            catalogue[idx].title = e.target.value;
-                            return { ...prev, catalogue };
-                          })}
-                          className="bg-stone-800 text-stone-100"
-                        />
-                        <Textarea
-                          placeholder="Description"
-                          value={item.description}
-                          onChange={e => setNewInvite(prev => {
-                            const catalogue = [...prev.catalogue];
-                            catalogue[idx].description = e.target.value;
-                            return { ...prev, catalogue };
-                          })}
-                          className="bg-stone-800 text-stone-100"
-                          rows={2}
-                        />
-                        <Input
-                          placeholder="Price (optional)"
-                          value={item.price}
-                          onChange={e => setNewInvite(prev => {
-                            const catalogue = [...prev.catalogue];
-                            catalogue[idx].price = e.target.value;
-                            return { ...prev, catalogue };
-                          })}
-                          className="bg-stone-800 text-stone-100"
-                        />
-                        <Input
-                          placeholder="Link (optional)"
-                          value={item.link}
-                          onChange={e => setNewInvite(prev => {
-                            const catalogue = [...prev.catalogue];
-                            catalogue[idx].link = e.target.value;
-                            return { ...prev, catalogue };
-                          })}
-                          className="bg-stone-800 text-stone-100"
-                        />
-                        <div className="flex flex-col items-center gap-2">
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={e => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  setNewInvite(prev => {
-                                    const catalogue = [...prev.catalogue];
-                                    catalogue[idx].image = ev.target?.result as string;
-                                    return { ...prev, catalogue };
-                                  });
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                            className="w-full"
-                          />
-                          {item.image && <img src={item.image} alt="Catalogue" className="w-12 h-12 object-cover rounded border border-stone-600" />}
-                          <Button variant="ghost" size="sm" onClick={() => setNewInvite(prev => ({
-                            ...prev,
-                            catalogue: prev.catalogue.filter((_, i) => i !== idx)
-                          }))} className="text-red-400 hover:text-red-200">Remove</Button>
+                
+                {newInvite.links.length === 0 ? (
+                  <div className="text-center py-8 bg-stone-800/30 rounded-lg border border-stone-700/50">
+                    <Link2 className="w-8 h-8 mx-auto mb-3 text-stone-400" />
+                    <p className="text-stone-400 mb-4">No links added yet</p>
+                    <Button onClick={addLinkToInvite} variant="outline" className="border-amber-500 text-amber-400 hover:bg-amber-500/10">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Your First Link
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {newInvite.links.map((link, idx) => (
+                      <div key={link.id} className="bg-stone-800/30 border border-stone-700/50 rounded-lg p-4 transition-all hover:bg-stone-800/50">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-start">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-stone-300">Title</label>
+                            <Input
+                              placeholder="Link title"
+                              value={link.title}
+                              onChange={e => updateInviteLink(link.id, 'title', e.target.value)}
+                              className="bg-stone-900/50 border-stone-600 text-stone-100 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-stone-300">URL</label>
+                            <Input
+                              placeholder="https://example.com"
+                              value={link.url}
+                              onChange={e => updateInviteLink(link.id, 'url', e.target.value)}
+                              className="bg-stone-900/50 border-stone-600 text-stone-100 text-sm"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-stone-300">Icon</label>
+                            <Input
+                              placeholder="link, user, etc."
+                              value={link.icon}
+                              onChange={e => updateInviteLink(link.id, 'icon', e.target.value)}
+                              className="bg-stone-900/50 border-stone-600 text-stone-100 text-sm"
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => removeLinkFromInvite(link.id)} 
+                              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
+                    <Button onClick={addLinkToInvite} variant="outline" className="w-full border-amber-500 text-amber-400 hover:bg-amber-500/10">
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Another Link
+                    </Button>
                   </div>
-                  {newInvite.catalogue.length < 5 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="mt-2 border-amber-400 text-amber-300"
-                      onClick={() => setNewInvite(prev => ({
-                        ...prev,
-                        catalogue: [...prev.catalogue, { title: '', image: '', description: '', price: '', link: '' }]
-                      }))}
-                    >+ Add Catalogue Item</Button>
+                )}
+              </div>
+
+              {/* Theme Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-purple-500/10 rounded-lg">
+                    <Palette className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-stone-100">Theme & Branding</h3>
+                  {!isPremium && (
+                    <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/30">
+                      Premium
+                    </Badge>
                   )}
                 </div>
-              ) : (
-                <div className="p-4 border-2 border-yellow-400 bg-yellow-100 text-yellow-900 rounded text-center opacity-70">
-                  <strong>Upgrade to Premium</strong> to unlock catalogue features for your invitations!
+                
+                {isPremium ? (
+                  <div className="bg-stone-800/30 border border-stone-700/50 rounded-lg p-6 space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-stone-200">Primary Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={newInvite.theme.primaryColor}
+                            onChange={e => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, primaryColor: e.target.value } }))}
+                            className="w-12 h-12 rounded-lg border border-stone-600 cursor-pointer"
+                          />
+                          <Input
+                            value={newInvite.theme.primaryColor}
+                            onChange={e => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, primaryColor: e.target.value } }))}
+                            className="bg-stone-900/50 border-stone-600 text-stone-100 flex-1"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-stone-200">Background Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={newInvite.theme.backgroundColor}
+                            onChange={e => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, backgroundColor: e.target.value } }))}
+                            className="w-12 h-12 rounded-lg border border-stone-600 cursor-pointer"
+                          />
+                          <Input
+                            value={newInvite.theme.backgroundColor}
+                            onChange={e => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, backgroundColor: e.target.value } }))}
+                            className="bg-stone-900/50 border-stone-600 text-stone-100 flex-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-stone-200">Font Family</label>
+                        <select
+                          value={newInvite.theme.font}
+                          onChange={e => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, font: e.target.value } }))}
+                          className="w-full p-3 rounded-lg bg-stone-900/50 border border-stone-600 text-stone-100"
+                        >
+                          <option value="sans-serif">Sans Serif</option>
+                          <option value="serif">Serif</option>
+                          <option value="monospace">Monospace</option>
+                        </select>
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-sm font-medium text-stone-200">Logo</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, logo: ev.target?.result as string } }));
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="w-full p-3 rounded-lg bg-stone-900/50 border border-stone-600 text-stone-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-amber-500 file:text-white hover:file:bg-amber-600"
+                        />
+                        {newInvite.theme.logo && (
+                          <div className="flex items-center gap-3">
+                            <img src={newInvite.theme.logo} alt="Logo Preview" className="w-16 h-16 object-contain rounded-lg border border-stone-600" />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => setNewInvite(prev => ({ ...prev, theme: { ...prev.theme, logo: '' } }))}
+                              className="text-red-400 hover:text-red-300"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Live Preview */}
+                    <div className="space-y-3">
+                      <label className="text-sm font-medium text-stone-200">Live Preview</label>
+                      <div 
+                        className="p-6 rounded-lg border border-stone-600 min-h-[120px] flex items-center justify-center"
+                        style={{ backgroundColor: newInvite.theme.backgroundColor }}
+                      >
+                        <div className="text-center">
+                          {newInvite.theme.logo && (
+                            <img src={newInvite.theme.logo} alt="Logo" className="w-12 h-12 mx-auto mb-3 rounded" />
+                          )}
+                          <h4 
+                            style={{ 
+                              color: newInvite.theme.primaryColor, 
+                              fontFamily: newInvite.theme.font,
+                              fontSize: '1.5rem',
+                              fontWeight: '600'
+                            }}
+                          >
+                            {newInvite.title || 'Your Invitation Title'}
+                          </h4>
+                          <p className="text-stone-400 text-sm mt-2">
+                            {newInvite.description || 'Your invitation description will appear here'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-r from-amber-500/10 to-amber-600/10 border border-amber-500/30 rounded-lg p-6 text-center">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="p-3 bg-amber-500/20 rounded-full">
+                        <Sparkles className="w-6 h-6 text-amber-400" />
+                      </div>
+                    </div>
+                    <h4 className="text-lg font-semibold text-amber-400 mb-2">Unlock Premium Features</h4>
+                    <p className="text-amber-300/80 text-sm">
+                      Get access to custom colors, fonts, branding, and advanced analytics
+                    </p>
+                    <Button className="mt-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700">
+                      Upgrade to Premium
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              {/* Catalogue Section */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-indigo-500/10 rounded-lg">
+                    <Image className="w-5 h-5 text-indigo-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-stone-100">Product Catalogue</h3>
+                  {!isPremium && (
+                    <Badge variant="secondary" className="bg-amber-500/10 text-amber-400 border-amber-500/30">
+                      Premium
+                    </Badge>
+                  )}
                 </div>
-              )}
+                
+                {isPremium ? (
+                  <div className="bg-stone-800/30 border border-stone-700/50 rounded-lg p-6">
+                    {/* Catalogue implementation would go here */}
+                    <div className="text-center py-8 text-stone-400">
+                      <Image className="w-8 h-8 mx-auto mb-3" />
+                      <p>Catalogue feature coming soon</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gradient-to-r from-indigo-500/10 to-indigo-600/10 border border-indigo-500/30 rounded-lg p-6 text-center">
+                    <div className="flex items-center justify-center mb-4">
+                      <div className="p-3 bg-indigo-500/20 rounded-full">
+                        <Image className="w-6 h-6 text-indigo-400" />
+                      </div>
+                    </div>
+                    <h4 className="text-lg font-semibold text-indigo-400 mb-2">Product Catalogue</h4>
+                    <p className="text-indigo-300/80 text-sm">
+                      Showcase your products with beautiful image galleries and descriptions
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
-            <hr className="my-4 border-stone-700" />
-            {/* Submit Button */}
-            <div className="flex justify-end">
-              <Button onClick={createInviteLink} className="bg-gradient-to-r from-amber-700 to-amber-800 hover:from-amber-800 hover:to-amber-900 text-white px-6 py-2 rounded shadow">
+
+            {/* Footer */}
+            <div className="flex justify-between items-center pt-6 border-t border-stone-700/50">
+              <Button 
+                variant="ghost" 
+                onClick={() => setShowCreateDialog(false)}
+                className="text-stone-400 hover:text-stone-200"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={createInviteLink} 
+                className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-8 py-2 shadow-lg"
+                disabled={!newInvite.title.trim()}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
                 Create Invitation
               </Button>
             </div>
@@ -516,7 +589,6 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
         </Dialog>
       </div>
 
-      {/* Modal for recent invite */}
       {showRecentModal && recentInvite && (
         <Dialog open={showRecentModal} onOpenChange={setShowRecentModal}>
           <DialogContent className="max-w-md border-amber-700 bg-stone-900 text-stone-100">
@@ -542,7 +614,6 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
         </Dialog>
       )}
 
-      {/* Invitation Links List */}
       <div className="space-y-4">
         {inviteLinks.length === 0 ? (
           <Card className="shadow-xl border-stone-700 bg-stone-800/90 backdrop-blur-sm">
@@ -578,34 +649,12 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
                         >
                           {invite.isActive ? "Active" : "Inactive"}
                         </Badge>
-                        {isExpired(invite.expiresAt) && (
+                        {invite.expiresAt && isExpired(invite.expiresAt) && (
                           <Badge variant="destructive">Expired</Badge>
                         )}
                       </div>
                       {invite.description && (
                         <p className="text-stone-400 text-sm mb-3">{invite.description}</p>
-                      )}
-                      {invite.catalogue && invite.catalogue.length > 0 && (
-                        <div className="mt-4">
-                          <h4 className="font-semibold text-stone-100 mb-2">Catalogue</h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {invite.catalogue.map((item, idx) => (
-                              <div key={idx} className="bg-stone-700 rounded-lg p-4 flex flex-col items-center shadow">
-                                {item.image && (
-                                  <img src={item.image} alt={item.title} className="w-full h-32 object-cover rounded mb-2" />
-                                )}
-                                <div className="font-bold text-stone-100 text-center">{item.title}</div>
-                                <div className="text-stone-300 text-sm mb-2 text-center">{item.description}</div>
-                                {item.price && <div className="text-amber-400 font-semibold">{item.price}</div>}
-                                {item.link && (
-                                  <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-cyan-400 underline text-sm mt-1">
-                                    View
-                                  </a>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
                       )}
                       <div className="flex items-center gap-4 text-xs text-stone-500">
                         <div className="flex items-center gap-1">
@@ -670,73 +719,7 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
                     <Badge variant="secondary" className="bg-stone-700 text-stone-300 border-stone-600">
                       {invite.links.length} links
                     </Badge>
-                    {/* ShareButton component is not defined in the original file, assuming it's a placeholder */}
-                    {/* <ShareButton
-                      profileUrl={invite.inviteUrl}
-                      profileName={invite.title}
-                      variant="outline"
-                      size="sm"
-                      className="border-amber-600 text-amber-200 hover:bg-amber-900/30"
-                    >
-                      <Share2 className="w-4 h-4 mr-2" />
-                      Share
-                    </ShareButton> */}
                   </div>
-                  {isPremium && invite.analytics && (
-                    <div className="mt-4">
-                      <h4 className="font-semibold text-stone-100 mb-2">Advanced Analytics</h4>
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full text-xs text-stone-200 border border-stone-700">
-                          <thead>
-                            <tr>
-                              <th className="px-2 py-1 border-b border-stone-700">Time</th>
-                              <th className="px-2 py-1 border-b border-stone-700">Type</th>
-                              <th className="px-2 py-1 border-b border-stone-700">Location</th>
-                              <th className="px-2 py-1 border-b border-stone-700">Device</th>
-                              <th className="px-2 py-1 border-b border-stone-700">Referral</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {invite.analytics.map((a, i) => (
-                              <tr key={i}>
-                                <td className="px-2 py-1 border-b border-stone-800">{new Date(a.timestamp).toLocaleString()}</td>
-                                <td className="px-2 py-1 border-b border-stone-800">{a.type}</td>
-                                <td className="px-2 py-1 border-b border-stone-800">{a.location}</td>
-                                <td className="px-2 py-1 border-b border-stone-800">{a.device}</td>
-                                <td className="px-2 py-1 border-b border-stone-800">{a.referral}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      <button
-                        className="mt-2 px-3 py-1 bg-amber-600 text-white rounded hover:bg-amber-700"
-                        onClick={() => {
-                          // Export to CSV logic
-                          const csv = [
-                            ['Time', 'Type', 'Location', 'Device', 'Referral'],
-                            ...invite.analytics.map(a => [
-                              new Date(a.timestamp).toLocaleString(),
-                              a.type,
-                              a.location,
-                              a.device,
-                              a.referral
-                            ])
-                          ].map(row => row.join(',')).join('\n');
-                          const blob = new Blob([csv], { type: 'text/csv' });
-                          const url = URL.createObjectURL(blob);
-                          const link = document.createElement('a');
-                          link.href = url;
-                          link.download = `${invite.title}-analytics.csv`;
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
-                        }}
-                      >
-                        Export to CSV
-                      </button>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
@@ -747,4 +730,4 @@ const InviteLinkManager: React.FC<InviteLinkManagerProps & { isPremium?: boolean
   );
 };
 
-export default InviteLinkManager; 
+export default InviteLinkManager;
